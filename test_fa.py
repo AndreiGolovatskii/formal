@@ -1,5 +1,6 @@
 import pytest
 from finite_automations import DFA, NFA, eps
+from conftest import assert_compare_fa
 
 
 @pytest.fixture
@@ -96,9 +97,8 @@ def test_simple_accept(nfa_ab6):
     assert not nfa_ab6.accept("aaaa")
 
 
-def test_compare_ab6_ab6_eps(nfa_ab6, nfa_ab6_many_eps, ab10_words):
-    for word in ab10_words:
-        assert nfa_ab6.accept(word) == nfa_ab6_many_eps.accept(word)
+def test_compare_ab6_ab6_eps(nfa_ab6, nfa_ab6_many_eps):
+    assert_compare_fa(nfa_ab6, nfa_ab6_many_eps, 10)
 
 
 def test_nfa_iterator_hash(nfa_ab6):
@@ -116,13 +116,11 @@ def test_dfa_from_nfa_simple(nfa_ab6):
     assert dfa.accept("aaa")
 
 
-def test_compare_nfa_dfa(nfa_ab6, ab10_words):
+def test_compare_nfa_dfa(nfa_ab6):
     dfa = DFA.from_nfa(nfa_ab6)
-    for word in ab10_words:
-        assert dfa.accept(word) == nfa_ab6.accept(word)
+    assert_compare_fa(nfa_ab6, dfa, 10)
 
 
-def test_renumered_dfa(nfa_ab6, ab10_words):
+def test_renumered_dfa(nfa_ab6):
     renum = DFA.from_nfa(nfa_ab6).renumbered()
-    for word in ab10_words:
-        assert renum.accept(word) == nfa_ab6.accept(word)
+    assert_compare_fa(renum, nfa_ab6, 10)

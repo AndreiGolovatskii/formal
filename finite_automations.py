@@ -26,16 +26,18 @@ class FiniteAutomation(object):
         sigma = input("sigma:")
         fa = cls(sigma)
         try:
-            while (True):
-                state_from, state_to, letter = input("state_from state_to letter:").split()
-                if letter == 'eps':
+            while True:
+                state_from, state_to, letter = input(
+                    "state_from state_to letter(or smth else for end):"
+                ).split()
+                if letter == "eps":
                     letter = eps
                 fa.add_transition(int(state_from), int(state_to), letter)
         except Exception:
             pass
-        start_state = input("start_state")
+        start_state = input("start_state: ")
         fa.start_state = int(start_state)
-        terminal_states = map(int, input("terminal_states").split())
+        terminal_states = map(int, input("terminal_states: ").split())
         fa.terminal_states = set(terminal_states)
         return fa
 
@@ -43,7 +45,7 @@ class FiniteAutomation(object):
         for state in self.transition_function.keys():
             for letter in self.sigma:
                 state_to = self.transition_function[state][letter]
-                print(str(state) + "----" + str(letter) + "------->" + str(state_to))
+                print(str(state) + "----" + str(letter) + "--->" + str(state_to))
         print("start_state: " + str(self.start_state))
         print("terminal_states: " + str(self.terminal_states))
 
@@ -118,7 +120,9 @@ class DFA(FiniteAutomation):
         current_state = attr.ib()
 
         def transition(self, letter):
-            return DFA.Iterator(self.dfa, self.dfa.transition_function[self.current_state][letter])
+            return DFA.Iterator(
+                self.dfa, self.dfa.transition_function[self.current_state][letter]
+            )
 
         def is_terminal(self) -> bool:
             return self.current_state in self.dfa.terminal_states

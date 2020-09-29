@@ -1,9 +1,6 @@
-import pytest
-
-
 def rec_build(prefix, remainder_len, sigma, words):
     if remainder_len == 0:
-        words.append(''.join(prefix))
+        words.append("".join(prefix))
         return
     for letter in sigma:
         prefix.append(letter)
@@ -25,11 +22,7 @@ def words_generator(max_len, sigma):
     return words
 
 
-@pytest.fixture(scope='module')
-def ab10_words():
-    return words_generator(10, 'ab')
-
-
-@pytest.fixture(scope='module')
-def abc7_words():
-    return words_generator(7, 'abc')
+def assert_compare_fa(first, second, word_len):
+    assert first.sigma == second.sigma
+    for word in words_generator(word_len, first.sigma):
+        assert first.accept(word) == second.accept(word)
