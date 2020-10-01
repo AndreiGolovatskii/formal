@@ -6,7 +6,7 @@ from conftest import assert_compare_fa
 @pytest.fixture
 def nfa_ab6():
     auto = NFA("ab")
-    auto.start_state = 0
+    auto.set_start_state(0)
     auto.add_transition(0, 1, "a")
     auto.add_transition(1, 1, "b")
     auto.add_transition(1, 2, "a")
@@ -16,15 +16,20 @@ def nfa_ab6():
     auto.add_transition(3, 5, "a")
     auto.add_transition(5, 3, "b")
     auto.add_transition(3, 1, eps)
-    auto.terminal_states.add(1)
+    auto.add_terminal_state(1)
     return auto
+
+
+@pytest.fixture
+def dfa_ab6(nfa_ab6):
+    return DFA.from_nfa(nfa_ab6)
 
 
 @pytest.fixture
 def nfa_ab6_many_eps():
     """same as above but with a lot of eps"""
     auto = NFA("ab")
-    auto.start_state = 0
+    auto.set_start_state(0)
     auto.add_transition(0, 6, eps)
     auto.add_transition(6, 6, eps)
     auto.add_transition(0, 7, eps)
@@ -55,8 +60,28 @@ def nfa_ab6_many_eps():
     auto.add_transition(3, 13, eps)
     auto.add_transition(13, 1, eps)
     auto.add_transition(5, 20, eps)
-    auto.terminal_states.add(1)
+    auto.add_terminal_state(1)
     return auto
+
+
+@pytest.fixture
+def nfa_ab4():
+    auto = NFA('ab')
+    auto.add_transition(1, 2, 'a')
+    auto.add_transition(2, 1, 'b')
+    auto.add_transition(1, 3, 'b')
+    auto.add_transition(3, 1, 'a')
+    auto.add_transition(1, 4, 'a')
+    auto.add_transition(1, 4, 'b')
+    auto.add_transition(1, 4, eps)
+    auto.set_start_state(1)
+    auto.add_terminal_state(4)
+    return auto
+
+
+@pytest.fixture
+def dfa_ab4(nfa_ab4):
+    return DFA.from_nfa(nfa_ab4)
 
 
 def test_nfa_empty():
@@ -114,13 +139,47 @@ def test_dfa_from_nfa_simple(nfa_ab6):
     assert dfa.accept("a")
     assert dfa.accept("ab")
     assert dfa.accept("aaa")
+    assert dfa.is_full()
 
 
-def test_compare_nfa_dfa(nfa_ab6):
-    dfa = DFA.from_nfa(nfa_ab6)
-    assert_compare_fa(nfa_ab6, dfa, 10)
+def test_compare_nfa_dfa_6(nfa_ab6, dfa_ab6):
+    assert dfa_ab6.is_full()
+    assert_compare_fa(nfa_ab6, dfa_ab6, 10)
 
 
-def test_renumered_dfa(nfa_ab6):
-    renum = DFA.from_nfa(nfa_ab6).renumbered()
-    assert_compare_fa(renum, nfa_ab6, 10)
+def test_compare_nfa_dfa_4(nfa_ab4, dfa_ab4):
+    assert_compare_fa(nfa_ab4, dfa_ab4, 10)
+
+
+def test_renumered_dfa(dfa_ab6):
+    renum = dfa_ab6.renumbered()
+    assert renum.is_full()
+    assert_compare_fa(renum, dfa_ab6, 10)
+
+
+def test_complete_to_full():
+    fa = DFA("ab")
+    fa.add_transition(0, 1, "a")
+    fa.add_transition(1, 1, "b")
+    fa.add_state("UNREACHBLE")
+    assert not fa.is_full()
+    full_fa = fa.completed_to_full()
+    assert full_fa.is_full()
+    minimized = fa.minimized()
+    assert len(minimized.states) < len(fa.states)
+
+
+def test_dfa_minimization_simple(dfa_ab6):
+    dfa = dfa_ab6.renumbered()
+    min_dfa = dfa.minimized()
+    assert min_dfa.is_full()
+    assert min_dfa.accept("a")
+    assert min_dfa.accept("ab")
+    assert min_dfa.accept("aaa")
+    assert len(min_dfa.states) < len(dfa.states)
+    assert len(min_dfa.states) == len(min_dfa.minimized().states)
+
+
+def test_dfa_minimization(dfa_ab6):
+    min_dfa = dfa_ab6.renumbered().minimized()
+    assert_compare_fa(min_dfa, dfa_ab6, 12)

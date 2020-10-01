@@ -4,7 +4,7 @@ from conftest import assert_compare_fa
 
 def main():
     nfa = NFA.from_input()
-    dfa = DFA.from_nfa(nfa).renumbered()
+    dfa = DFA.from_nfa(nfa).renumbered().minimized()
     assert_compare_fa(nfa, dfa, 10)  # check on words with len <= 10
     dfa.print()
 
