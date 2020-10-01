@@ -11,5 +11,10 @@
  ### Tests Start
   ```pytest```
   
- ### NFA -> DFA program
+ ### NFA -> MinDFA program
    ```python3 main.py```
+
+### htmlcov is result ```of pytest --cov-report html --cov=finite_automations```
+
+pytest-cov required (https://pypi.org/project/pytest-cov/)
+```$ pip3 install pytest-cov```
