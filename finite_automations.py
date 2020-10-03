@@ -114,11 +114,13 @@ class NFA(FiniteAutomation):
                         state_queue.append(state)
             return frozenset(states)
 
-        def __eq__(self, other):
-            return self.nfa == other.nfa and self.states == other.states
-
     def __init__(self, sigma, states=None, start_state=None, terminal_states=None):
-        super().__init__(sigma, states, start_state, terminal_states)
+        super().__init__(
+            sigma,
+            states=states,
+            start_state=start_state,
+            terminal_states=terminal_states,
+        )
         self.transition_function = defaultdict(lambda: defaultdict(set))
 
     def add_transition(self, state_from, state_to, letter) -> None:
@@ -184,17 +186,16 @@ class DFA(FiniteAutomation):
         return tf_reverse
 
     def reachable_states_(self):
-        reachables = set()
+        readable = set()
 
         def dfs(state):
-            if state in reachables:
-                return
-            reachables.add(state)
-            for state_to in self.transition_function[state].values():
-                dfs(state_to)
+            if state not in readable:
+                readable.add(state)
+                for state_to in self.transition_function[state].values():
+                    dfs(state_to)
 
         dfs(self.start_state)
-        return reachables
+        return readable
 
     def table_of_unequal_states_(self):
         queue = deque()
@@ -203,9 +204,8 @@ class DFA(FiniteAutomation):
 
         for i in self.states:
             for j in self.states:
-                if (
-                    not marked[i][j]
-                    and (i in self.terminal_states) != (j in self.terminal_states)
+                if not marked[i][j] and (i in self.terminal_states) != (
+                    j in self.terminal_states
                 ):
                     marked[i][j] = marked[j][i] = True
                     queue.append((i, j))
@@ -226,12 +226,12 @@ class DFA(FiniteAutomation):
             fa = self.completed_to_full()
 
         unequal = fa.table_of_unequal_states_()
-        reachables = fa.reachable_states_()
+        reachable = fa.reachable_states_()
         component = {state: None for state in fa.states}
 
         cnt = 0
         for state in fa.states:
-            if state not in reachables:
+            if state not in reachable:
                 continue
             if component[state] is None:
                 component[state] = cnt
@@ -239,6 +239,7 @@ class DFA(FiniteAutomation):
                 for diff_state in fa.states:
                     if not unequal[state][diff_state]:
                         component[diff_state] = component[state]
+
         res = DFA(fa.sigma)
         for state in fa.states:
             for letter, state_to in fa.transition_function[state].items():
@@ -261,7 +262,7 @@ class DFA(FiniteAutomation):
                 if sigma not in renumbered.transition_function[state]:
                     renumbered.add_transition(state, devils_state, sigma)
 
-        assert renumbered.is_full()
+        assert renumbered.is_full(), "can not complete to full"
         return renumbered
 
     def is_full(self):
@@ -292,3 +293,49 @@ class DFA(FiniteAutomation):
                     used_states.add(next_state)
                     queue.append(next_state)
         return dfa
+
+    def reverse_terminal_states(self):
+        self.terminal_states = self.states - self.terminal_states
+
+    def find_not_eq_word(self, other):
+        @attr.s(frozen=True)
+        class TwinIterator(FiniteAutomation.Iterator):
+            iterator_first: FiniteAutomation.Iterator = attr.ib()
+            iterator_second: FiniteAutomation.Iterator = attr.ib()
+
+            def transition(self, letter):
+                return TwinIterator(
+                    self.iterator_first.transition(letter),
+                    self.iterator_second.transition(letter),
+                )
+
+            def is_terminal(self) -> bool:
+                return (
+                    self.iterator_first.is_terminal()
+                    and self.iterator_second.is_terminal()
+                )
+
+        def dfs(iterator, sigma, path, used):
+            if iterator in used:
+                return None
+            used.add(iterator)
+            if iterator.is_terminal():
+                return path if path else [eps]
+            for letter in sigma:
+                path.append(letter)
+                res = dfs(iterator.transition(letter), sigma, path + [letter], used)
+                if res:
+                    return res
+                path.pop()
+            return None
+
+        assert self.sigma == other.sigma, "Sigma must be same"
+        first = self.minimized()
+        second = other.minimized()
+        second.reverse_terminal_states()
+        used = set()
+        path = []
+        return dfs(TwinIterator(first.begin(), second.begin()), first.sigma, path, used)
+
+    def is_equal_to(self, other):
+        return self.find_not_eq_word(other) is None
