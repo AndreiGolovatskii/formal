@@ -14,7 +14,7 @@
  ### NFA -> MinDFA program
    ```python3 main.py```
 
-### htmlcov is result ```of pytest --cov-report html --cov=finite_automations```
+### test coverage ```of pytest --cov-report html --cov=finite_automations``` (about 90%, only input/output not covered)
 
 pytest-cov required (https://pypi.org/project/pytest-cov/)
 ```$ pip3 install pytest-cov```
