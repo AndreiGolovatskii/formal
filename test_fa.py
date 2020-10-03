@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from finite_automations import DFA, NFA, eps
 from conftest import assert_compare_fa
@@ -66,13 +68,13 @@ def nfa_ab6_many_eps():
 
 @pytest.fixture
 def nfa_ab4():
-    auto = NFA('ab')
-    auto.add_transition(1, 2, 'a')
-    auto.add_transition(2, 1, 'b')
-    auto.add_transition(1, 3, 'b')
-    auto.add_transition(3, 1, 'a')
-    auto.add_transition(1, 4, 'a')
-    auto.add_transition(1, 4, 'b')
+    auto = NFA("ab")
+    auto.add_transition(1, 2, "a")
+    auto.add_transition(2, 1, "b")
+    auto.add_transition(1, 3, "b")
+    auto.add_transition(3, 1, "a")
+    auto.add_transition(1, 4, "a")
+    auto.add_transition(1, 4, "b")
     auto.add_transition(1, 4, eps)
     auto.set_start_state(1)
     auto.add_terminal_state(4)
@@ -151,7 +153,7 @@ def test_compare_nfa_dfa_4(nfa_ab4, dfa_ab4):
     assert_compare_fa(nfa_ab4, dfa_ab4, 10)
 
 
-def test_renumered_dfa(dfa_ab6):
+def test_renumbered_dfa(dfa_ab6):
     renum = dfa_ab6.renumbered()
     assert renum.is_full()
     assert_compare_fa(renum, dfa_ab6, 10)
@@ -161,7 +163,7 @@ def test_complete_to_full():
     fa = DFA("ab")
     fa.add_transition(0, 1, "a")
     fa.add_transition(1, 1, "b")
-    fa.add_state("UNREACHBLE")
+    fa.add_state("UNREACHABLE")
     assert not fa.is_full()
     full_fa = fa.completed_to_full()
     assert full_fa.is_full()
@@ -183,3 +185,18 @@ def test_dfa_minimization_simple(dfa_ab6):
 def test_dfa_minimization(dfa_ab6):
     min_dfa = dfa_ab6.renumbered().minimized()
     assert_compare_fa(min_dfa, dfa_ab6, 12)
+
+
+def test_dfa_reverse(dfa_ab6):
+    reversed_dfa = deepcopy(dfa_ab6)
+    reversed_dfa.reverse_terminal_states()
+
+    assert reversed_dfa.accept("a") != dfa_ab6.accept("a")
+    assert reversed_dfa.accept("aaab") != dfa_ab6.accept("aaab")
+    assert reversed_dfa.accept("b") != dfa_ab6.accept("b")
+
+
+def test_auto_equals(dfa_ab6, dfa_ab4):
+    other = dfa_ab6.minimized()
+    assert other.is_equal_to(dfa_ab6)
+    assert other.find_not_eq_word(dfa_ab4) is not None
