@@ -2,15 +2,7 @@ from collections import defaultdict, deque
 
 import attr
 
-
-class Eps(object):
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super().__new__(cls)
-        return cls.instance
-
-
-eps = Eps()
+from common import alignment, eps
 
 
 class FiniteAutomation(object):
@@ -24,30 +16,41 @@ class FiniteAutomation(object):
 
     @classmethod
     def from_input(cls):
-        sigma = input("sigma:")
+        sigma = input("sigma:\n")
         fa = cls(sigma)
         try:
             while True:
                 state_from, state_to, letter = input(
-                    "state_from state_to letter(or smth else for end):"
+                    "state_from state_to letter(or smth else for end):\n"
                 ).split()
                 if letter == "eps":
                     letter = eps
                 fa.add_transition(int(state_from), int(state_to), letter)
         except Exception:
             pass
-        start_state = input("start_state: ")
+        start_state = input("start_state:\n")
         fa.start_state = int(start_state)
-        terminal_states = map(int, input("terminal_states: ").split())
+        terminal_states = map(int, input("terminal_states:\n").split())
         fa.terminal_states = set(terminal_states)
         return fa
 
     def print(self):
-        for state in self.states:
-            for letter, state_to in self.transition_function[state].items():
-                print(str(state) + "----" + str(letter) + "--->" + str(state_to))
-        print("start_state: " + str(self.start_state))
-        print("terminal_states: " + str(self.terminal_states))
+        first_row = (
+            ["", "", ""] + [str(letter) for letter in sorted(self.sigma)] + ["eps"]
+        )
+        rows = [first_row]
+        for state in sorted(self.states):
+            row = [
+                "" if state != self.start_state else "S",
+                "" if state not in self.terminal_states else "T",
+                str(state),
+            ]
+            for letter in sorted(self.sigma) + [eps]:
+                states = self.get_states_from(state, letter)
+                row.append(",".join(map(str, states)))
+            rows.append(row)
+        alignment(rows)
+        print("\n".join(map("|".join, rows)))
 
     def __init__(self, sigma, states=None, start_state=None, terminal_states=None):
         self.sigma = frozenset(sigma)
@@ -80,6 +83,12 @@ class FiniteAutomation(object):
         self.start_state = state
 
     def begin(self) -> Iterator:
+        raise NotImplementedError
+
+    def get_edges_from(self, state):
+        raise NotImplementedError
+
+    def get_states_from(self, state, sigma):
         raise NotImplementedError
 
 
@@ -132,6 +141,16 @@ class NFA(FiniteAutomation):
     def begin(self) -> Iterator:
         return NFA.Iterator(self, {self.start_state})
 
+    def get_edges_from(self, state):
+        res = []
+        for letter, next_states in self.transition_function[state].items():
+            for next_state in next_states:
+                res.append((next_state, letter))
+        return res
+
+    def get_states_from(self, state, sigma):
+        return self.transition_function[state][sigma]
+
 
 class DFA(FiniteAutomation):
     @attr.s(frozen=True)
@@ -163,7 +182,9 @@ class DFA(FiniteAutomation):
     def renumbered(self):
         mapping = {}
         renumbered_dfa = DFA(self.sigma)
-        for idx, state in enumerate(self.states):
+        for idx, state in enumerate(
+            sorted(self.states, key=lambda x: x != self.start_state)
+        ):
             mapping[state] = idx
 
         for state in self.states:
@@ -339,3 +360,14 @@ class DFA(FiniteAutomation):
 
     def is_equal_to(self, other):
         return self.find_not_eq_word(other) is None
+
+    def get_edges_from(self, state):
+        res = []
+        for letter, next_state in self.transition_function[state].items():
+            res.append((next_state, letter))
+        return res
+
+    def get_states_from(self, state, letter):
+        if letter == eps:
+            return {}
+        return {self.transition_function[state][letter]}
