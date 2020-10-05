@@ -1,8 +1,9 @@
 from copy import deepcopy
 
 import pytest
-from finite_automations import DFA, NFA, eps
 from conftest import assert_compare_fa
+from finite_automations import DFA, NFA, eps
+from latex_format import build_edges, build_nodes
 
 
 @pytest.fixture
@@ -200,3 +201,23 @@ def test_auto_equals(dfa_ab6, dfa_ab4):
     other = dfa_ab6.minimized()
     assert other.is_equal_to(dfa_ab6)
     assert other.find_not_eq_word(dfa_ab4) is not None
+
+
+def test_pretty_print():
+    nfa = NFA("ab")
+    nfa.add_transition(0, 1, "a")
+    nfa.add_transition(1, 2, "a")
+    nfa.add_transition(1, 2, "b")
+    nfa.set_start_state(0)
+    nfa.add_terminal_state(2)
+    nodes_res = (
+        "\\node[state,initial]  (q_{0})[]              {$q_{0}$;};\n"
+        + "\\node[state]          (q_{1})[below of=q_{0}]{$q_{1}$;};\n"
+        + "\\node[state,accepting](q_{2})[below of=q_{1}]{$q_{2}$;};"
+    )
+    assert build_nodes(nfa) == nodes_res
+    edges_res = (
+        "(q_{0})edge[bend left]node{a}  (q_{1})\n"
+        + "(q_{1})edge[bend left]node{a,b}(q_{2})"
+    )
+    assert build_edges(nfa) == edges_res
