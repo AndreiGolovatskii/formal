@@ -1,0 +1,10 @@
+.idea
+.pytest_cache
+.ropeproject
+__pycache__
+htmlcov
+.DS_Store
+.coverage
+input.txt
+tex.out
+tex.in
