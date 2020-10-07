@@ -207,16 +207,16 @@ class DFA(FiniteAutomation):
         return tf_reverse
 
     def reachable_states_(self):
-        readable = set()
+        reachable = set()
 
         def dfs(state):
-            if state not in readable:
-                readable.add(state)
+            if state not in reachable:
+                reachable.add(state)
                 for state_to in self.transition_function[state].values():
                     dfs(state_to)
 
         dfs(self.start_state)
-        return readable
+        return reachable
 
     def table_of_unequal_states_(self):
         queue = deque()
@@ -336,18 +336,20 @@ class DFA(FiniteAutomation):
                     and self.iterator_second.is_terminal()
                 )
 
-        def dfs(iterator, sigma, path, used):
-            if iterator in used:
+        def dfs(iterator, sigma, current_word, is_used):
+            if iterator in is_used:
                 return None
-            used.add(iterator)
+            is_used.add(iterator)
             if iterator.is_terminal():
-                return path if path else [eps]
+                return current_word if current_word else [eps]
             for letter in sigma:
-                path.append(letter)
-                res = dfs(iterator.transition(letter), sigma, path + [letter], used)
+                current_word.append(letter)
+                res = dfs(
+                    iterator.transition(letter), sigma, current_word + [letter], is_used
+                )
                 if res:
                     return res
-                path.pop()
+                current_word.pop()
             return None
 
         assert self.sigma == other.sigma, "Sigma must be same"
@@ -355,8 +357,8 @@ class DFA(FiniteAutomation):
         second = other.minimized()
         second.reverse_terminal_states()
         used = set()
-        path = []
-        return dfs(TwinIterator(first.begin(), second.begin()), first.sigma, path, used)
+        word = []
+        return dfs(TwinIterator(first.begin(), second.begin()), first.sigma, word, used)
 
     def is_equal_to(self, other):
         return self.find_not_eq_word(other) is None
