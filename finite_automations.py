@@ -17,7 +17,7 @@ class FiniteAutomation(object):
     @classmethod
     def from_input(cls):
         sigma = input("sigma:\n")
-        fa = cls(sigma)
+        finite_automation = cls(sigma)
         try:
             while True:
                 state_from, state_to, letter = input(
@@ -25,14 +25,14 @@ class FiniteAutomation(object):
                 ).split()
                 if letter == "eps":
                     letter = eps
-                fa.add_transition(int(state_from), int(state_to), letter)
+                finite_automation.add_transition(int(state_from), int(state_to), letter)
         except Exception:
             pass
         start_state = input("start_state:\n")
-        fa.start_state = int(start_state)
+        finite_automation.start_state = int(start_state)
         terminal_states = map(int, input("terminal_states:\n").split())
-        fa.terminal_states = set(terminal_states)
-        return fa
+        finite_automation.terminal_states = set(terminal_states)
+        return finite_automation
 
     def print(self):
         first_row = (
@@ -223,51 +223,57 @@ class DFA(FiniteAutomation):
         marked = defaultdict(lambda: defaultdict(lambda: False))
         tf_reverse = self.reversed_transition_function_()
 
-        for i in self.states:
-            for j in self.states:
-                if not marked[i][j] and (i in self.terminal_states) != (
-                    j in self.terminal_states
-                ):
-                    marked[i][j] = marked[j][i] = True
-                    queue.append((i, j))
+        for state_first in self.states:
+            for state_second in self.states:
+                if not marked[state_first][state_second] and (
+                    state_first in self.terminal_states
+                ) != (state_second in self.terminal_states):
+                    marked[state_first][state_second] = marked[state_second][
+                        state_first
+                    ] = True
+                    queue.append((state_first, state_second))
 
         while len(queue):
-            u, v = queue.pop()
+            state_first, state_second = queue.pop()
             for letter in self.sigma:
-                for r in tf_reverse[u][letter]:
-                    for s in tf_reverse[v][letter]:
-                        if not marked[r][s]:
-                            marked[r][s] = marked[s][r] = True
-                            queue.append((r, s))
+                for from_first in tf_reverse[state_first][letter]:
+                    for from_second in tf_reverse[state_second][letter]:
+                        if not marked[from_first][from_second]:
+                            marked[from_first][from_second] = marked[from_second][
+                                from_first
+                            ] = True
+                            queue.append((from_first, from_second))
         return marked
 
     def minimized(self):
-        fa = self
+        finite_automation = self
         if not self.is_full():
-            fa = self.completed_to_full()
+            finite_automation = self.completed_to_full()
 
-        unequal = fa.table_of_unequal_states_()
-        reachable = fa.reachable_states_()
-        component = {state: None for state in fa.states}
+        unequal = finite_automation.table_of_unequal_states_()
+        reachable = finite_automation.reachable_states_()
+        component = {state: None for state in finite_automation.states}
 
         cnt = 0
-        for state in fa.states:
+        for state in finite_automation.states:
             if state not in reachable:
                 continue
             if component[state] is None:
                 component[state] = cnt
                 cnt += 1
-                for diff_state in fa.states:
+                for diff_state in finite_automation.states:
                     if not unequal[state][diff_state]:
                         component[diff_state] = component[state]
 
-        res = DFA(fa.sigma)
-        for state in fa.states:
-            for letter, state_to in fa.transition_function[state].items():
+        res = DFA(finite_automation.sigma)
+        for state in finite_automation.states:
+            for letter, state_to in finite_automation.transition_function[
+                state
+            ].items():
                 res.add_transition(component[state], component[state_to], letter)
-        if fa.start_state is not None:
-            res.set_start_state(component[fa.start_state])
-        for state in fa.terminal_states:
+        if finite_automation.start_state is not None:
+            res.set_start_state(component[finite_automation.start_state])
+        for state in finite_automation.terminal_states:
             res.add_terminal_state(component[state])
         return res
 
