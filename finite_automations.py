@@ -339,7 +339,7 @@ class DFA(FiniteAutomation):
             def is_terminal(self) -> bool:
                 return (
                     self.iterator_first.is_terminal()
-                    and self.iterator_second.is_terminal()
+                    ^ self.iterator_second.is_terminal()
                 )
 
         def dfs(iterator, sigma, current_word, is_used):
@@ -361,7 +361,6 @@ class DFA(FiniteAutomation):
         assert self.sigma == other.sigma, "Sigma must be same"
         first = self.minimized()
         second = other.minimized()
-        second.reverse_terminal_states()
         used = set()
         word = []
         return dfs(TwinIterator(first.begin(), second.begin()), first.sigma, word, used)
