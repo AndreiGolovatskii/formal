@@ -221,3 +221,22 @@ def test_pretty_print():
         + "(q_{1})edge[bend left]node{a,b}(q_{2})"
     )
     assert build_edges(nfa) == edges_res
+
+
+def test_equal_border_case():
+    l_1 = DFA("ab")
+    l_1.add_transition(0, 0, "a")
+    l_1.add_transition(0, 0, "b")
+    l_1.set_start_state(0)
+
+    l_2 = DFA("ab")
+    l_2.add_transition(0, 1, "a")
+    l_2.add_transition(0, 1, "b")
+
+    l_2.add_transition(1, 1, "a")
+    l_2.add_transition(1, 1, "b")
+    l_2.set_start_state(0)
+    l_2.add_terminal_state(1)
+
+    assert not l_1.is_equal_to(l_2)
+    assert not l_2.is_equal_to(l_1)
